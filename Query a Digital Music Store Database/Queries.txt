@@ -1,0 +1,75 @@
+Queire1- Which customer spent the most on the top/ most popular Artist?
+
+WITH BestSellingArtist AS
+  (SELECT sum(il.UnitPrice * il.Quantity) ArtistTotal,
+          a.Name ArtistName,
+          a.ArtistId
+   FROM InvoiceLine il
+   JOIN Track t ON il.TrackId=t.TrackId
+   JOIN Album am ON am.AlbumId=t.AlbumId
+   JOIN Artist a ON a.ArtistId=am.ArtistId
+   GROUP BY a.ArtistId
+   ORDER BY ArtistTotal DESC
+   LIMIT 1)
+SELECT b.ArtistName,
+       b.ArtistTotal,
+       c.CustomerId,
+       c.FirstName || ' ' || c.LastName CustomerName,
+       SUM(il.Quantity*il.UnitPrice) CustomerTotal
+FROM Artist a
+JOIN Album am ON a.ArtistId = am.ArtistId
+JOIN Track t ON t.AlbumId = am.AlbumId
+JOIN InvoiceLine il ON t.TrackId = il.Trackid
+JOIN Invoice i ON il.InvoiceId = i.InvoiceId
+JOIN Customer c ON c.CustomerId = i.CustomerId
+JOIN BestSellingArtist b ON b.ArtistId = a.ArtistId
+GROUP BY c.CustomerId
+ORDER BY CustomerTotal DESC
+
+Queire2- Which city has the best customers
+
+SELECT c.city,
+       sum(i.Total) Invoicetotal
+FROM Customer c
+JOIN Invoice i ON i.CustomerId = c.CustomerId
+GROUP BY c.city
+ORDER BY sum(i.Total) DESC
+LIMIT 20;
+
+Queire3-  Which countries made most purchase in each of the genre?
+
+WITH t1 AS
+  (SELECT COUNT(i.InvoiceId) Purchases,
+          c.Country,
+          g.Name
+   FROM Invoice i
+   JOIN Customer c ON i.CustomerId = c.CustomerId
+   JOIN InvoiceLine il ON il.Invoiceid = i.InvoiceId
+   JOIN Track t ON t.TrackId = il.Trackid
+   JOIN Genre g ON t.GenreId = g.GenreId
+   GROUP BY c.Country,
+            g.Name
+   ORDER BY c.Country,
+            Purchases DESC)
+SELECT t1.*
+FROM t1
+JOIN
+  (SELECT MAX(Purchases) AS MaxPurchases,
+          Country,
+          Name
+   FROM t1
+   GROUP BY Country)t2 ON t1.Country = t2.Country
+WHERE t1.Purchases = t2.MaxPurchases;
+
+Queire4- Who writes rock music?
+
+SELECT a.Name,
+       COUNT(g.Name) Songs
+FROM Genre g
+JOIN Track t ON g.GenreId = t.GenreId
+JOIN Album am ON am.AlbumId=t.AlbumId
+JOIN Artist a ON a.ArtistId = am.ArtistId
+WHERE g.Name='Rock'
+GROUP BY a.Name
+ORDER BY COUNT(a.Name) DESC
+LIMIT 20;
